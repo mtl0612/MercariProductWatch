@@ -46,3 +46,12 @@ class Products(Base):
 
     def __repr__(self):
         return "<Product('%s','%s')>" % (self.name, self.url)
+
+class Options(Base):
+    __tablename__ = 'options'
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    value = Column(String)
+    def __init__(self, name, value):
+        self.name = name
+        self.value = value

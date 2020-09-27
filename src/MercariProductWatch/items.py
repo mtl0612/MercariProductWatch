@@ -16,6 +16,7 @@ class ProductItem(scrapy.Item):
     product_image_url = scrapy.Field()
     name = scrapy.Field()
     price = scrapy.Field()
-
+    watchlink_name = scrapy.Field()
+    
     def __repr__(self):
         return repr({"ProductItem url: ": self['product_url']})
