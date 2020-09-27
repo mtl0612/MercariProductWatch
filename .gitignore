@@ -3,7 +3,7 @@ venv/
 **/*.jpg
 **/*.log
 **/*.db
-**/*.pyc
+
 images/
 test/
 logs/
