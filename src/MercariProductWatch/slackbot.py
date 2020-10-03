@@ -65,16 +65,29 @@ class SlackBot:
         response =  self.client.users_list()
         users = response['members']
         for user in users:
-            yield user            
+            yield user
+
+    def delete_message(self, message_ts, channel = None):
+        if channel == None:
+            channel = self.MAIN_CHANNEL
+        response = self.client.chat_delete(
+            channel= channel,
+            ts = message_ts
+        )
 
 if __name__ == "__main__":
     bot = SlackBot()
+    bot.MESSAGES_PER_PAGE = 100
+    messages = bot.receive_message()
+    for message in messages:
+        if 'bot_id' in message:
+            bot.delete_message(message['ts'])
+            time.sleep(random.random())
+
     # bot.receive_message()
     from pprint import pprint
     # for channel in bot.get_channels():
         # pprint(channel['name'])
-    channel_id = bot.find_create_channel("day la test channel14")
-    print(channel_id)
-    bot.send_message("Test test test", channel_id )
+
 
     # pprint(bot.list_user())

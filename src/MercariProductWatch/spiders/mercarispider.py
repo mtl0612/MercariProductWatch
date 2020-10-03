@@ -6,14 +6,16 @@ from MercariProductWatch.database.models import Products, WatchLinks, Options
 from datetime import datetime
 import time
 import os
+import html
+
 from MercariProductWatch.items import ProductItem
 from pathlib import Path
 from urllib.parse import urlparse
-
+from sqlalchemy import exc
 from MercariProductWatch.slackbot import SlackBot
-import html
 
-VERSION = "0.0.2"
+
+VERSION = "0.0.3"
 
 now = datetime.now()
 timestr = time.strftime("%Y%m%d-%H%M%S")
@@ -48,11 +50,17 @@ class MercariSpider(scrapy.Spider):
         new_ts = slack_ts.value
         for message in self.bot.receive_message(slack_ts.value):
             current_ts = message['ts']
+            # if no old timestamp found in database
             if new_ts is None:
                 new_ts = current_ts
+            # if ts in db older than message ts
             if float(current_ts) > float(new_ts):
                 new_ts = current_ts
-            if 'bot_id' not in message and message['text'].lower().startswith('add'):
+            # Go to next message if current message is from bot
+            if 'bot_id' in message:
+                continue
+            # if message started with add:
+            if message['text'].lower().startswith('add'):
                 split_message_text = html.unescape(message['text']).split()
                 url = split_message_text[1][1:-1]
                 if len(split_message_text) > 2:
@@ -62,6 +70,26 @@ class MercariSpider(scrapy.Spider):
                 url_parsed = urlparse(url)
                 if url_parsed.scheme in ['http', 'https'] and url_parsed.netloc != '':
                     self.db.add_watch_url(name, url)
+            # if message is 'query' one:
+            elif message['text'].lower().startswith('query'):
+                watchlinks = self.db.session.query(WatchLinks).all()
+                sendmessage_text = 'ID - Name\n'
+                for watchlink in watchlinks:
+                    sendmessage_text += f"{watchlink.id} - {watchlink.name}\n"
+                self.bot.send_message(sendmessage_text)
+            # if message is 'delete' one:
+            elif message['text'].lower().startswith('delete'):
+                try:
+                    watchlink_id = html.unescape(message['text']).split()[1]
+                except IndexError:
+                    continue
+                try:
+                    watchlink = self.db.session.query(WatchLinks).filter(WatchLinks.id == watchlink_id).first()
+                    self.db.session.delete(watchlink)
+                    self.db.session.commit()
+                except exc.SQLAlchemyError:
+                    self.bot.send_message(f"Cannot delete watchlink id {watchlink_id}")
+
         slack_ts.value = new_ts
         self.db.session.add(slack_ts)
         self.db.session.commit()

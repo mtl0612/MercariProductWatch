@@ -25,7 +25,7 @@ class MercariproductwatchPipeline:
         price_on_web = int(item['price'][1::].replace(',',''))
         url = item['product_url']
         product = self.db.session.query(Products).filter(Products.product_id ==product_id).first()
-        channel_id = self.bot.find_create_channel('mer_pro_' + item['watchlink_name'])
+        channel_id = self.bot.find_create_channel("mer" + item['watchlink_name'])
         if product is None:
             logging.info(f'Product id {product_id} not existed in database!')
             product_image_url = item['product_image_url']
